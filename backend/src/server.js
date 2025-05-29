@@ -8,6 +8,9 @@ const axios = require('axios');
 const app = express();
 const httpServer = createServer(app);
 
+// ✅ Add Express middleware
+app.use(express.json());
+
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -16,18 +19,42 @@ app.use(cors({
   credentials: true
 }));
 
+// ✅ Add health check endpoints for Railway
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'F1 Live Server Running', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ✅ Add Socket.IO endpoint test
+app.get('/socket-test', (req, res) => {
+  res.json({
+    socketio: 'ready',
+    clients: io.engine.clientsCount || 0
+  });
+});
+
 const io = new Server(httpServer, {
   cors: {
     origin: [
       "http://localhost:5173",
-      "https://f1-eight-orpin.vercel.app"  // ✅ Fixed to match your Vercel URL
+      "https://f1-eight-orpin.vercel.app"
     ],
     methods: ["GET", "POST"],
     credentials: true
   }
 });
 
-// Rest of your code remains the same...
 // Socket connection handling
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
@@ -47,7 +74,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// All your existing functions...
 async function sendInitialData(socket) {
   try {
     const sessionData = await fetchSessionData();
@@ -154,4 +180,5 @@ const PORT = process.env.PORT || 3001;
 
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`F1 Live Server running on port ${PORT}`);
+  console.log(`Health check available at: http://localhost:${PORT}/health`);
 });
