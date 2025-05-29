@@ -12,7 +12,7 @@ const httpServer = createServer(app);
 app.use(cors({
   origin: [
     "http://localhost:5173",  // Local development
-    "https://f1-eight-orpin.vercel.app/live"  // Will update after Vercel deployment
+    "https://f1-eight-orpin.vercel.app"  // Will update after Vercel deployment
   ],
   credentials: true
 }));
