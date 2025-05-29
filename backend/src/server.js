@@ -12,10 +12,11 @@ const httpServer = createServer(app);
 app.use(express.json());
 
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://f1-eight-orpin.vercel.app"
-  ],
+  origin: true,
+  // [
+  //   "http://localhost:5173",
+  //   "https://f1-eight-orpin.vercel.app"
+  // ],
   credentials: true
 }));
 
@@ -46,10 +47,11 @@ app.get('/socket-test', (req, res) => {
 
 const io = new Server(httpServer, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://f1-eight-orpin.vercel.app"
-    ],
+    origin: true,
+    // [
+    //   "http://localhost:5173",
+    //   "https://f1-eight-orpin.vercel.app"
+    // ],
     methods: ["GET", "POST"],
     credentials: true
   }
