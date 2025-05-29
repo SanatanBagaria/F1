@@ -11,6 +11,8 @@ const httpServer = createServer(app);
 // ✅ Add Express middleware
 app.use(express.json());
 
+app.options('*', cors());
+
 app.use(cors({
   origin: [
     "http://localhost:5173",  // For local development
