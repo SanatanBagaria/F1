@@ -3,7 +3,6 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const cron = require('node-cron');
-//const fetch = require('node-fetch');
 const axios = require('axios');
 
 const app = express();
@@ -11,8 +10,8 @@ const httpServer = createServer(app);
 
 app.use(cors({
   origin: [
-    "http://localhost:5173",  // Local development
-    "https://f1-eight-orpin.vercel.app"  // Will update after Vercel deployment
+    "http://localhost:5173",
+    "https://f1-eight-orpin.vercel.app"
   ],
   credentials: true
 }));
@@ -21,13 +20,14 @@ const io = new Server(httpServer, {
   cors: {
     origin: [
       "http://localhost:5173",
-      "https://your-app-name.vercel.app"
+      "https://f1-eight-orpin.vercel.app"  // ✅ Fixed to match your Vercel URL
     ],
     methods: ["GET", "POST"],
     credentials: true
   }
 });
 
+// Rest of your code remains the same...
 // Socket connection handling
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
@@ -35,8 +35,6 @@ io.on('connection', (socket) => {
   socket.on('join_live_timing', () => {
     socket.join('live-timing');
     console.log(`Client ${socket.id} joined live-timing room`);
-    
-    // Send initial data immediately when client joins
     sendInitialData(socket);
   });
 
@@ -49,7 +47,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Function to send initial data to new clients
+// All your existing functions...
 async function sendInitialData(socket) {
   try {
     const sessionData = await fetchSessionData();
@@ -57,7 +55,7 @@ async function sendInitialData(socket) {
     
     socket.emit('session_info', {
       currentSession: sessionData,
-      isLive: false // Set to true if you detect a live session
+      isLive: false
     });
     
     socket.emit('live_data_update', {
@@ -73,7 +71,6 @@ async function sendInitialData(socket) {
   }
 }
 
-// In your backend server.js, add detailed logging:
 async function fetchSessionData() {
   try {
     const currentYear = new Date().getFullYear()
@@ -82,32 +79,13 @@ async function fetchSessionData() {
     const response = await axios.get(`https://api.openf1.org/v1/sessions?year=${currentYear}`)
     console.log(`Response status: ${response.status}`)
     
-    // Get the raw data
     let sessions = response.data
     
-    // Log everything about the response
-    console.log(`Raw response type:`, typeof sessions)
-    console.log(`Raw response is array:`, Array.isArray(sessions))
-    console.log(`Raw response length:`, sessions?.length || 'undefined')
-    console.log(`Raw response sample:`, sessions?.slice(0, 2))
-    
-    // Ensure we have an array
-    if (!Array.isArray(sessions)) {
-      console.log('Response is not an array, checking for nested data...')
-      // Check common nesting patterns
-      if (sessions.data) sessions = sessions.data
-      if (sessions.sessions) sessions = sessions.sessions
-      if (sessions.results) sessions = sessions.results
-    }
-    
     if (!Array.isArray(sessions) || sessions.length === 0) {
-      console.log('Still no valid sessions array after checks')
+      console.log('No valid sessions array')
       return null
     }
     
-    console.log(`Successfully parsed ${sessions.length} sessions`)
-    
-    // Sort by date and get most recent
     const sortedSessions = sessions.sort((a, b) => 
       new Date(b.date_start) - new Date(a.date_start)
     )
@@ -122,14 +100,11 @@ async function fetchSessionData() {
   }
 }
 
-// Also update fetchTimingData:
 async function fetchTimingData(sessionKey = 'latest') {
   try {
-    console.log('Fetching timing data...')
     console.log(`Trying session key: ${sessionKey}`)
     
     const response = await axios.get(`https://api.openf1.org/v1/drivers?session_key=${sessionKey}`)
-    console.log(`Response for ${sessionKey}: ${response.status}`)
     console.log(`Data for ${sessionKey}:`, response.data.length, 'drivers')
     
     return { 
@@ -143,20 +118,17 @@ async function fetchTimingData(sessionKey = 'latest') {
   }
 }
 
-// Broadcast data every 10 seconds
-// In your cron job, make sure you're sending the session data correctly:
 cron.schedule('*/10 * * * * *', async () => {
   try {
     const sessionData = await fetchSessionData()
     const timingData = await fetchTimingData(sessionData?.session_key || 'latest')
     
-    // Properly calculate live status
     const isLive = sessionData ? checkIfSessionIsLive(sessionData) : false
     
     const payload = {
       ...timingData,
       currentSession: sessionData,
-      isLive: isLive, // ✅ Now properly calculated
+      isLive: isLive,
       timestamp: new Date().toISOString()
     }
     
@@ -168,7 +140,6 @@ cron.schedule('*/10 * * * * *', async () => {
   }
 })
 
-// Helper function to check if session is live
 function checkIfSessionIsLive(session) {
   if (!session || !session.date_start || !session.date_end) return false
   
@@ -179,8 +150,8 @@ function checkIfSessionIsLive(session) {
   return now >= start && now <= end
 }
 
+const PORT = process.env.PORT || 3001;
 
-const PORT = 3001;
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`F1 Live Server running on port ${PORT}`);
 });

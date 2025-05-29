@@ -11,10 +11,12 @@ class SocketService {
     if (this.socket?.connected) return this.socket
 
     this.socket = io(url, {
-      transports: ['websocket', 'polling'],
-      timeout: 20000,
-      forceNew: true
-    })
+    transports: ['polling'], // ✅ Remove 'websocket' completely
+    timeout: 30000,
+    reconnectionDelay: 1000,
+    reconnectionAttempts: 5,
+    forceNew: true
+  })
 
     this.socket.on('connect', () => {
       this.isConnected = true
