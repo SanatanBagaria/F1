@@ -10,13 +10,19 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: [
+    "http://localhost:5173",  // Local development
+    "https://your-app-name.vercel.app"  // Will update after Vercel deployment
+  ],
   credentials: true
 }));
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://your-app-name.vercel.app"
+    ],
     methods: ["GET", "POST"],
     credentials: true
   }
