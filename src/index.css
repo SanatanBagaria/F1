@@ -53,6 +53,105 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+/* Minimalistic Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideInLeft {
+  from { 
+    opacity: 0; 
+    transform: translateX(-30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes slideInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes expand {
+  from { width: 0; }
+  to { width: 3rem; }
+}
+
+@keyframes bounceSlow {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+  40% { transform: translateY(-10px) translateX(-50%); }
+  60% { transform: translateY(-5px) translateX(-50%); }
+}
+
+/* Animation Classes */
+.animate-fade-in {
+  animation: fadeIn 1s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.animate-fade-in-up-delay {
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.animate-fade-in-up-delay-2 {
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.8s ease-out 0.2s both;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.8s ease-out 0.2s both;
+}
+
+.animate-slide-in-left-slow {
+  animation: slideInLeft 1s ease-out 0.4s both;
+}
+
+.animate-slide-in-right-slow {
+  animation: slideInRight 1s ease-out 0.6s both;
+}
+
+.animate-expand {
+  animation: expand 1s ease-out 0.8s both;
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 3s infinite;
+}
+
+.animate-count-up {
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+/* Smooth transitions for interactive elements */
+.transition-all {
+  transition: all 0.3s ease;
+}
 
 @media (prefers-color-scheme: light) {
   :root {
