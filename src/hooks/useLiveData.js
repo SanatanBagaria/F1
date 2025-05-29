@@ -25,6 +25,7 @@ export const useLiveData = () => {
 
     // Connection events
     socket.on('connect', () => {
+      console.log('✅ Socket connected successfully')
       setConnectionStatus('connected')
       setError(null)
       
@@ -39,6 +40,7 @@ export const useLiveData = () => {
     })
 
     socket.on('disconnect', () => {
+      console.log('❌ Socket disconnected')
       setConnectionStatus('disconnected')
       setIsLive(false)
       
@@ -48,42 +50,43 @@ export const useLiveData = () => {
       }
     })
 
-    // Add this to your connect function in useLiveData.js
-socket.on('connect_error', (error) => {
-  console.log('Connection error:', error)
-  setConnectionStatus('error')
-  setError('Connection failed')
-})
+    // ✅ Enhanced error handling
+    socket.on('connect_error', (error) => {
+      console.error('❌ Connection error:', error.message)
+      setConnectionStatus('error')
+      setError(`Connection failed: ${error.message}`)
+    })
 
-socket.on('reconnect', (attemptNumber) => {
-  console.log('Reconnected after', attemptNumber, 'attempts')
-  setConnectionStatus('connected')
-  setError(null)
-})
+    socket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 Reconnected after', attemptNumber, 'attempts')
+      setConnectionStatus('connected')
+      setError(null)
+    })
 
-socket.on('reconnect_error', (error) => {
-  console.log('Reconnection failed:', error)
-  setConnectionStatus('error')
-})
-
+    socket.on('reconnect_error', (error) => {
+      console.error('❌ Reconnection failed:', error.message)
+      setConnectionStatus('error')
+      setError('Reconnection failed')
+    })
 
     // Data events
     socket.on(SOCKET_EVENTS.LIVE_DATA_UPDATE, (data) => {
-  console.log('Received live data update:', data) // Add this debug log
-  
-  setLiveData(prevData => ({
-    ...prevData,
-    drivers: data.drivers || [],
-    intervals: data.intervals || [],
-    carData: data.carData || [],
-    currentSession: data.currentSession || prevData.currentSession, // This should now have the Race session
-    sessions: data.currentSession ? [data.currentSession] : prevData.sessions
-  }))
-  setIsLive(data.isLive || false)
-  setLoading(false)
-})
+      console.log('📡 Received live data update:', data)
+      
+      setLiveData(prevData => ({
+        ...prevData,
+        drivers: data.drivers || [],
+        intervals: data.intervals || [],
+        carData: data.carData || [],
+        currentSession: data.currentSession || prevData.currentSession,
+        sessions: data.currentSession ? [data.currentSession] : prevData.sessions
+      }))
+      setIsLive(data.isLive || false)
+      setLoading(false)
+    })
 
     socket.on(SOCKET_EVENTS.SESSION_INFO, (data) => {
+      console.log('📋 Received session info:', data)
       setLiveData(prevData => ({
         ...prevData,
         currentSession: data.currentSession,
@@ -94,6 +97,7 @@ socket.on('reconnect_error', (error) => {
     })
 
     socket.on(SOCKET_EVENTS.ERROR, (error) => {
+      console.error('❌ Socket error:', error)
       setError(error.message || 'Unknown error')
     })
 
