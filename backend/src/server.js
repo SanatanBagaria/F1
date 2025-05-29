@@ -12,9 +12,12 @@ const httpServer = createServer(app);
 app.use(express.json());
 
 app.use(cors({
-  origin: 
-  true,
-  credentials: true
+  origin: [
+    "http://localhost:5173",  // For local development
+    "https://f1-eight-orpin.vercel.app"  // For your deployed Vercel app
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "OPTIONS"]
 }));
 
 // ✅ Add health check endpoints for Railway
@@ -44,8 +47,10 @@ app.get('/socket-test', (req, res) => {
 
 const io = new Server(httpServer, {
   cors: {
-    origin:
-    true,
+    origin: [
+      "http://localhost:5173",  // For local development
+      "https://f1-eight-orpin.vercel.app"  // For your deployed Vercel app
+    ],
     methods: ["GET", "POST"],
     credentials: true
   }
