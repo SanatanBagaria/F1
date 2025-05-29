@@ -13,14 +13,39 @@ app.use(express.json());
 
 app.options('*', cors());
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://f1-eight-orpin.vercel.app"
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173",  // For local development
-    "https://f1-eight-orpin.vercel.app"  // For your deployed Vercel app
-  ],
+  origin: function(origin, callback) {
+    console.log('CORS check, incoming origin:', origin);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "OPTIONS"]
 }));
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: function(origin, callback) {
+      console.log('Socket.IO CORS check, incoming origin:', origin);
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
 
 // ✅ Add health check endpoints for Railway
 app.get('/', (req, res) => {
@@ -45,17 +70,6 @@ app.get('/socket-test', (req, res) => {
     socketio: 'ready',
     clients: io.engine.clientsCount || 0
   });
-});
-
-const io = new Server(httpServer, {
-  cors: {
-    origin: [
-      "http://localhost:5173",  // For local development
-      "https://f1-eight-orpin.vercel.app"  // For your deployed Vercel app
-    ],
-    methods: ["GET", "POST"],
-    credentials: true
-  }
 });
 
 // Socket connection handling
