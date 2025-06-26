@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { f1Api } from "../services/f1Api"
 
 export const useChampionshipWinners = (startYear = 2020, endYear = new Date().getFullYear()) => {
@@ -10,26 +10,41 @@ export const useChampionshipWinners = (startYear = 2020, endYear = new Date().ge
   const [dataSource, setDataSource] = useState("")
 
   useEffect(() => {
+    let ignore = false // Prevent memory leaks[2]
+
     const fetchChampions = async () => {
       try {
         setLoading(true)
         setError(null)
 
         const result = await f1Api.getChampionshipWinners(startYear, endYear)
-        setChampions(result.data)
-        setDataSource(result.source)
+        
+        // Only update state if component is still mounted
+        if (!ignore) {
+          setChampions(result.data)
+          setDataSource(result.source)
+        }
       } catch (err) {
-        setError(err.message)
-        console.error("Failed to fetch championship winners:", err)
+        if (!ignore) {
+          setError(err.message)
+          console.error("Failed to fetch championship winners:", err)
+        }
       } finally {
-        setLoading(false)
+        if (!ignore) {
+          setLoading(false)
+        }
       }
     }
 
     fetchChampions()
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      ignore = true
+    }
   }, [startYear, endYear])
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -42,7 +57,7 @@ export const useChampionshipWinners = (startYear = 2020, endYear = new Date().ge
     } finally {
       setLoading(false)
     }
-  }
+  }, [startYear, endYear]) // Add dependencies to useCallback
 
   return { champions, loading, error, refetch, dataSource }
 }
@@ -54,6 +69,8 @@ export const useRaceSchedule = (season = new Date().getFullYear()) => {
   const [dataSource, setDataSource] = useState("")
 
   useEffect(() => {
+    let ignore = false
+
     const fetchRaceSchedule = async () => {
       try {
         setLoading(true)
@@ -63,18 +80,45 @@ export const useRaceSchedule = (season = new Date().getFullYear()) => {
         const result = await f1Api.getRaceSchedule(season)
         console.log(`Received ${result.data.length} races for ${season}`)
 
-        setRaces(result.data)
-        setDataSource(result.source)
+        if (!ignore) {
+          setRaces(result.data)
+          setDataSource(result.source)
+        }
       } catch (err) {
-        setError(err.message)
-        console.error("Failed to fetch race schedule:", err)
+        if (!ignore) {
+          setError(err.message)
+          console.error("Failed to fetch race schedule:", err)
+        }
       } finally {
-        setLoading(false)
+        if (!ignore) {
+          setLoading(false)
+        }
       }
     }
 
-    fetchRaceSchedule()
+    if (season) { // Only fetch if season is provided
+      fetchRaceSchedule()
+    }
+
+    return () => {
+      ignore = true
+    }
   }, [season])
 
-  return { races, loading, error, dataSource }
+  const refetch = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const result = await f1Api.getRaceSchedule(season)
+      setRaces(result.data)
+      setDataSource(result.source)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [season])
+
+  return { races, loading, error, dataSource, refetch }
 }

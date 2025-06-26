@@ -1,59 +1,72 @@
-"use client"
+// hooks/useRaceResults.js
+import { useState, useCallback } from 'react';
 
-import { useState, useCallback } from "react"
-import { f1Api } from "../services/f1Api"
+const useRaceResults = () => {
+  const [raceResults, setRaceResults] = useState({});
+  const [loadingResults, setLoadingResults] = useState({});
+  const [errors, setErrors] = useState({});
 
-export const useRaceResults = () => {
-  const [raceResults, setRaceResults] = useState({})
-  const [loadingResults, setLoadingResults] = useState({})
-  const [errors, setErrors] = useState({})
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
   const fetchRaceResult = useCallback(async (season, round) => {
-    const raceKey = `${season}-${round}`
+    const raceKey = `${season}-${round}`;
     
-    // If already loaded or loading, don't fetch again
-    if (raceResults[raceKey] || loadingResults[raceKey]) {
-      return raceResults[raceKey]
-    }
-
+    // Set loading state for this specific race
+    setLoadingResults(prev => ({ ...prev, [raceKey]: true }));
+    setErrors(prev => ({ ...prev, [raceKey]: null }));
+    
     try {
-      setLoadingResults(prev => ({ ...prev, [raceKey]: true }))
-      setErrors(prev => ({ ...prev, [raceKey]: null }))
-
-      console.log(`Fetching results for ${season} Round ${round}...`)
-      const result = await f1Api.getRaceResultsByRound(season, round)
+      const response = await fetch(`${API_BASE_URL}/api/results/${season}/${round}`);
       
-      setRaceResults(prev => ({ 
-        ...prev, 
-        [raceKey]: result.data 
-      }))
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       
-      return result.data
+      const data = await response.json();
+      
+      // Transform the results data
+      const transformedResults = {
+        season,
+        round,
+        raceName: data.raceName || `Round ${round}`,
+        results: data.map((result) => ({
+          position: result.position,
+          driver: `${result.Driver.givenName} ${result.Driver.familyName}`,
+          team: result.Constructor.name,
+          time: result.Time?.time || result.status || 'N/A',
+          points: result.points || '0'
+        }))
+      };
+      
+      setRaceResults(prev => ({
+        ...prev,
+        [raceKey]: transformedResults
+      }));
+      
     } catch (error) {
-      console.error(`Error fetching race results for ${season} Round ${round}:`, error)
-      setErrors(prev => ({ 
-        ...prev, 
-        [raceKey]: error.message 
-      }))
-      return null
+      console.error(`Error fetching race result for ${season}-${round}:`, error);
+      setErrors(prev => ({
+        ...prev,
+        [raceKey]: error.message || 'Failed to load race results'
+      }));
     } finally {
-      setLoadingResults(prev => ({ ...prev, [raceKey]: false }))
+      setLoadingResults(prev => ({ ...prev, [raceKey]: false }));
     }
-  }, [raceResults, loadingResults])
+  }, [API_BASE_URL]);
 
   const clearRaceResult = useCallback((season, round) => {
-    const raceKey = `${season}-${round}`
+    const raceKey = `${season}-${round}`;
     setRaceResults(prev => {
-      const newResults = { ...prev }
-      delete newResults[raceKey]
-      return newResults
-    })
+      const newResults = { ...prev };
+      delete newResults[raceKey];
+      return newResults;
+    });
     setErrors(prev => {
-      const newErrors = { ...prev }
-      delete newErrors[raceKey]
-      return newErrors
-    })
-  }, [])
+      const newErrors = { ...prev };
+      delete newErrors[raceKey];
+      return newErrors;
+    });
+  }, []);
 
   return {
     raceResults,
@@ -61,5 +74,7 @@ export const useRaceResults = () => {
     errors,
     fetchRaceResult,
     clearRaceResult
-  }
-}
+  };
+};
+
+export { useRaceResults };

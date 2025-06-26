@@ -99,10 +99,7 @@ const SeasonWinners = () => {
                           <div
                             className="w-1 h-8"
                             style={{
-                              backgroundColor:
-                                champion.team?.teamColour ||
-                                champion.team?.color ||
-                                "#EF4444",
+                              backgroundColor: champion.teamColor || champion.teamColour || "#EF4444",
                             }}
                           ></div>
                           <div className="space-y-1">
@@ -110,7 +107,7 @@ const SeasonWinners = () => {
                               {champion.driver}
                             </h4>
                             <p className="text-gray-500 dark:text-gray-400 font-light">
-                              {champion.team}
+                              {champion.team || champion.teamName}
                             </p>
                           </div>
                         </div>
@@ -118,7 +115,7 @@ const SeasonWinners = () => {
                         <div className="grid grid-cols-2 gap-4 pl-4">
                           <div className="space-y-1">
                             <div className="text-2xl font-light text-gray-900 dark:text-white">
-                              {champion.points}
+                              {champion.points || 0}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Points
@@ -126,7 +123,7 @@ const SeasonWinners = () => {
                           </div>
                           <div className="space-y-1">
                             <div className="text-2xl font-light text-gray-900 dark:text-white">
-                              {champion.wins}
+                              {champion.wins || 0}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Wins
@@ -147,10 +144,15 @@ const SeasonWinners = () => {
                       
                       <div className="space-y-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-1 h-8 bg-gray-400 dark:bg-gray-500"></div>
+                          <div 
+                            className="w-1 h-8"
+                            style={{
+                              backgroundColor: champion.teamColor || champion.teamColour || "#9CA3AF",
+                            }}
+                          ></div>
                           <div className="space-y-1">
                             <h4 className="text-xl font-light text-gray-900 dark:text-white">
-                              {champion.constructorChampion}
+                              {champion.constructorChampion || champion.team || 'Unknown'}
                             </h4>
                           </div>
                         </div>
@@ -158,7 +160,7 @@ const SeasonWinners = () => {
                         <div className="grid grid-cols-2 gap-4 pl-4">
                           <div className="space-y-1">
                             <div className="text-2xl font-light text-gray-500 dark:text-gray-400">
-                              {champion.constructorPoints}
+                              {champion.constructorPoints || 0}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Points
@@ -166,7 +168,7 @@ const SeasonWinners = () => {
                           </div>
                           <div className="space-y-1">
                             <div className="text-2xl font-light text-gray-500 dark:text-gray-400">
-                              {champion.constructorWins}
+                              {champion.constructorWins || 0}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Wins
