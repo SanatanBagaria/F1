@@ -7,6 +7,11 @@ import {
 } from '../transformers/teamTransformers.js'
 
 export class TeamDataService {
+  constructor() {
+    // Add debug logging to see what URL is being used
+    console.log('TeamDataService initialized with ERGAST_BASE_URL:', ERGAST_BASE_URL);
+  }
+
   // Main method to get teams based on preferred API
   async getTeams(season = new Date().getFullYear(), preferredApi = API_SOURCES.AUTO) {
     const currentYear = new Date().getFullYear()
@@ -62,17 +67,20 @@ export class TeamDataService {
     }
   }
 
-  // Get teams from Ergast
+  // Get teams from Ergast (actually Jolpica)
   async getTeamsFromErgast(season = new Date().getFullYear()) {
     try {
-      const response = await fetch(`${ERGAST_BASE_URL}/${season}/constructors.json`)
+      const url = `${ERGAST_BASE_URL}/${season}/constructors.json`;
+      console.log('Fetching teams from URL:', url); // Debug log
+      
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
       return {
         data: transformErgastTeamsData(data.MRData.ConstructorTable.Constructors),
-        source: API_SOURCES.ERGAST,
+        source: 'Jolpica F1 API', // Updated source name
       }
     } catch (error) {
       console.error("Error fetching teams from Ergast:", error)
@@ -83,7 +91,10 @@ export class TeamDataService {
   // Get constructor standings
   async getConstructorStandings(season = new Date().getFullYear()) {
     try {
-      const response = await fetch(`${ERGAST_BASE_URL}/${season}/constructorStandings.json`)
+      const url = `${ERGAST_BASE_URL}/${season}/constructorStandings.json`;
+      console.log('Fetching constructor standings from URL:', url); // Debug log
+      
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -92,7 +103,7 @@ export class TeamDataService {
         data: transformConstructorStandingsData(
           data.MRData.StandingsTable.StandingsLists[0]?.ConstructorStandings || [],
         ),
-        source: API_SOURCES.ERGAST,
+        source: 'Jolpica F1 API', // Updated source name
       }
     } catch (error) {
       console.error("Error fetching constructor standings:", error)
@@ -103,6 +114,8 @@ export class TeamDataService {
   // Get team details with drivers
   async getTeamDetails(season = new Date().getFullYear(), preferredApi = API_SOURCES.AUTO) {
     try {
+      console.log('Getting team details for season:', season, 'with API:', preferredApi);
+      
       // Get teams and drivers using the preferred API
       const [teamsResult, driversResult] = await Promise.all([
         this.getTeams(season, preferredApi), 

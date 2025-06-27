@@ -6,11 +6,24 @@ import {
 } from '../transformers/driverTransformers.js'
 
 export class DriverDataService {
+  constructor() {
+    // CRITICAL DEBUG: Check what URL is actually being used
+    console.log('DriverDataService initialized with ERGAST_BASE_URL:', ERGAST_BASE_URL);
+    
+    // If this shows ergast.com, your constants file is wrong!
+    if (ERGAST_BASE_URL.includes('ergast.com')) {
+      console.error('❌ CRITICAL ERROR: Still using old Ergast API!');
+      console.error('Your constants file must be updated to use: https://api.jolpi.ca/ergast/f1');
+    } else {
+      console.log('✅ Using correct Jolpica API');
+    }
+  }
+
   // Main method to get drivers based on preferred API
   async getDrivers(season = new Date().getFullYear(), preferredApi = API_SOURCES.AUTO) {
     const currentYear = new Date().getFullYear()
 
-    // For historical seasons, always use Ergast
+    // For historical seasons, always use Jolpica (Ergast replacement)
     if (season < currentYear) {
       return this.getDriversFromErgast(season)
     }
@@ -21,12 +34,12 @@ export class DriverDataService {
     } else if (preferredApi === API_SOURCES.OPENF1) {
       return this.getDriversFromOpenF1()
     } else {
-      // AUTO - try OpenF1 first, fallback to Ergast
+      // AUTO - try OpenF1 first, fallback to Jolpica
       try {
         const drivers = await this.getDriversFromOpenF1()
         return drivers
       } catch (error) {
-        console.warn("OpenF1 driver fetch failed, falling back to Ergast", error)
+        console.warn("OpenF1 driver fetch failed, falling back to Jolpica", error)
         return this.getDriversFromErgast(season)
       }
     }
@@ -35,6 +48,8 @@ export class DriverDataService {
   // Get drivers from OpenF1
   async getDriversFromOpenF1() {
     try {
+      console.log('Fetching drivers from OpenF1...');
+      
       // Try latest session first
       const driversResponse = await fetch(`${OPENF1_BASE_URL}/drivers?session_key=latest`)
 
@@ -62,20 +77,27 @@ export class DriverDataService {
     }
   }
 
-  // Get drivers from Ergast
+  // Get drivers from Jolpica (Ergast replacement)
   async getDriversFromErgast(season = new Date().getFullYear()) {
     try {
-      const response = await fetch(`${ERGAST_BASE_URL}/${season}/drivers.json`)
+      const url = `${ERGAST_BASE_URL}/${season}/drivers.json`;
+      console.log('Fetching drivers from URL:', url);
+      
+      // TEMPORARY HARDCODE FIX - Remove this once constants are fixed
+      const fixedUrl = url.replace('ergast.com/api/f1', 'api.jolpi.ca/ergast/f1');
+      console.log('Using corrected URL:', fixedUrl);
+      
+      const response = await fetch(fixedUrl);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
       return {
         data: transformErgastDriversData(data.MRData.DriverTable.Drivers),
-        source: API_SOURCES.ERGAST,
+        source: 'Jolpica F1 API', // Updated source name
       }
     } catch (error) {
-      console.error("Error fetching drivers from Ergast:", error)
+      console.error("Error fetching drivers from Jolpica:", error)
       throw error
     }
   }
@@ -83,17 +105,24 @@ export class DriverDataService {
   // Get driver standings
   async getDriverStandings(season = new Date().getFullYear()) {
     try {
-      const response = await fetch(`${ERGAST_BASE_URL}/${season}/driverStandings.json`)
+      const url = `${ERGAST_BASE_URL}/${season}/driverStandings.json`;
+      console.log('Fetching driver standings from URL:', url);
+      
+      // TEMPORARY HARDCODE FIX - Remove this once constants are fixed
+      const fixedUrl = url.replace('ergast.com/api/f1', 'api.jolpi.ca/ergast/f1');
+      console.log('Using corrected URL:', fixedUrl);
+      
+      const response = await fetch(fixedUrl);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
       return {
         data: transformDriverStandingsData(data.MRData.StandingsTable.StandingsLists[0]?.DriverStandings || []),
-        source: API_SOURCES.ERGAST,
+        source: 'Jolpica F1 API', // Updated source name
       }
     } catch (error) {
-      console.error("Error fetching driver standings:", error)
+      console.error("Error fetching driver standings from Jolpica:", error)
       throw error
     }
   }
