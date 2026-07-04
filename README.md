@@ -1,27 +1,34 @@
 # F1 Live Dashboard 🏎️
 
-A production-ready web application for Formula 1 fans and analysts, delivering real-time race data, schedules, standings, and comprehensive F1 information.
+A production-grade, highly responsive web dashboard for Formula 1 fans and analysts. This project aggregates real-time session telemetry, news, standings, schedules, and circuit layouts into a unified, premium user interface.
+
+---
 
 ## ✨ Features
 
-- **Live Timing** - Real-time updates for practice, qualifying, and race sessions
-- **Session Schedules** - Complete F1 calendar with upcoming race times
-- **Race History** - Past race results, winners, and statistics
-- **Live Standings** - Current driver and constructor championships
-- **Driver & Team Info** - Complete directory of current F1 drivers and teams
-- **Responsive Design** - Optimized for desktop and mobile devices
+- **⏱️ Live Timing & Replays:** Stream live telemetry, sector intervals, speeds, gears, and braking/throttle stats via Socket.IO. When off-season or between races, the backend automatically serves self-healing Abu Dhabi GP replays instead of empty placeholders.
+- **📅 Auto-Anchoring timeline:** An interactive vertical timeline of sessions. The view automatically scrolls and centers on the **next upcoming/active session** without shifting the global page scroll context. Scroll up for completed races, and scroll down for upcoming ones.
+- **🗺️ Authentic Track Maps:** Sleek specifications detailing track lengths, corners, DRS zones, and lap records, backed by official vector track maps that automatically invert colors (`dark:invert-[0.85]`) to stay readable in dark mode.
+- **🏆 Live Standings & Dynamic Mappings:** Dynamic driver standings synced from current points, mapping constructors and driver profiles accurately (solving the "Unknown" constructor bug). Parallelized API queries load 11+ years of historical data concurrently.
+- **🏎️ Dynamic Team Profiles:** Expanded card profiles showing active driver specs, current season standing telemetry, and official team logos.
+- **📰 Cached RSS News Feed:** Curated breaking F1 stories aggregated and cached on the backend directly from BBC RSS feeds.
+- **📊 Interactive Polls & Trivia:** Integrated voting state percentages and a built-in F1 Trivia Quiz game.
+
+---
 
 ## 🛠 Tech Stack
 
-**Frontend**
-- React.js with WebSocket integration
-- Tailwind CSS for styling
-- Deployed on Vercel
+**Frontend Client:**
+- **React.js (Vite)** with WebSocket client integration.
+- **Vanilla CSS & Tailwind CSS** for rich aesthetics, glassmorphism, transitions, and dark mode toggles.
+- Deployed on Vercel.
 
-**Backend**
-- Node.js with Express.js
-- WebSocket for real-time communication
-- Deployed on Railway
+**Backend Server:**
+- **Node.js (Express)** with Socket.IO support.
+- **In-Memory Cache Map** minimizing rate limits on third-party F1 telemetry APIs.
+- Deployed on Railway.
+
+---
 
 ## 🚀 Quick Start
 
@@ -29,108 +36,79 @@ A production-ready web application for Formula 1 fans and analysts, delivering r
 - Node.js (v18.0.0+)
 - npm or yarn
 
-### Installation
+### Installation & Run
 
-1. **Clone the repository**
+1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/f1-live-dashboard.git
-   cd f1-live-dashboard
+   git clone https://github.com/SanatanBagaria/F1.git
+   cd F1
    ```
 
-2. **Install dependencies**
+2. **Run Backend Server:**
    ```bash
-   # Backend
-   cd backend/src
+   cd backend
    npm install
-   
-   # Frontend
-   cd ../../src
-   npm install
+   npm start
    ```
+   The backend will launch on `http://localhost:3001` and establish the WebSocket handshake.
 
-3. **Set up environment variables**
-   
-   Create `.env` in the backend/src directory:
-   ```env
-   PORT=5000
-   NODE_ENV=production
+3. **Run Frontend Client:**
+   Open a new terminal window in the project root:
+   ```bash
+   npm install
+   npm run dev
    ```
-   
-   Create `.env` in the src directory:
-   ```env
-   REACT_APP_API_URL=your-railway-backend-url
-   REACT_APP_WEBSOCKET_URL=your-railway-websocket-url
-   ```
+   The frontend will open on `http://localhost:5173`.
+
+---
 
 ## 📁 Project Structure
 
 ```
-f1-live-dashboard/
+F1/
 ├── backend/
 │   ├── src/
-│   │   ├── services/         # Business logic services
-│   │   ├── socket/           # WebSocket implementation
-│   │   ├── utils/            # Backend utilities
-│   │   ├── server.js         # Main server file
-│   │   ├── package.json
-│   │   └── package-lock.json
-│   ├── public/               # Static assets
-│   └── shared/               # Shared utilities
+│   │   ├── config/           # Port and session variables
+│   │   ├── middleware/       # Express error handlers
+│   │   ├── routes/           # REST endpoints (standings, weather, news)
+│   │   ├── services/         # News caching, Jolpica, and OpenF1 APIs
+│   │   ├── socket/           # WebSocket socketManager.js broadcasts
+│   │   ├── utils/            # Helper utilities and logger
+│   │   └── server.js         # Entrypoint
+│   ├── package.json
+│   └── package-lock.json
 ├── src/
-│   ├── assets/               # Images, icons, fonts
-│   ├── components/           # Reusable React components
-│   ├── contexts/             # React context providers
-│   ├── hooks/                # Custom React hooks
-│   ├── pages/                # Main page components
-│   ├── services/             # API service functions
-│   ├── utils/                # Frontend utilities
+│   ├── assets/               # Branding assets
+│   ├── components/           # Reusable UI widgets (Navbar, LiveTiming, Timeline)
+│   ├── contexts/             # Global ThemeContext dark mode states
+│   ├── hooks/                # Custom React query hooks (useLiveData, useDriverStandings)
+│   ├── pages/                # LandingPage, History, current standings, TrackMaps, Polls
+│   ├── services/             # Client REST fetches
+│   ├── utils/                # Acronym lists and socket event keys
 │   ├── App.css
 │   ├── App.jsx
 │   ├── index.css
 │   └── main.jsx
-├── .gitignore
-├── README.md
-├── eslint.config.js
-└── index.html
+├── package.json
+└── vite.config.js
 ```
 
-## 🔗 API Endpoints
+---
 
-### Sessions & Timing
-- `GET /api/sessions` - Upcoming session schedules
-- `GET /api/live` - Live timing data
-- `GET /api/history` - Race history
+## 🔗 REST API Endpoints
 
-### Standings & Data
-- `GET /api/standings/drivers` - Driver championship standings
-- `GET /api/standings/teams` - Constructor championship standings
-- `GET /api/drivers` - All current drivers
-- `GET /api/teams` - All current teams
+### Timing & Telemetry
+- `GET /api/weather/latest` - Returns the latest track weather readings.
+- `GET /api/weather/:sessionKey` - Telemetry weather for a specific session.
+- `GET /api/news` - Server-cached breaking news articles from BBC F1.
 
-## 🧪 Testing
+### Standings & Results
+- `GET /api/standings/drivers/current` - Live driver championship standing list.
+- `GET /api/standings/teams/current` - Live constructor championship standing list.
+- `GET /api/driver-podiums/:season` - Retrieves podium counts per driver for a given season.
 
-```bash
-# Backend tests
-cd backend/src && npm test
+---
 
-# Frontend tests
-npm test
-```
-
-## 🚀 Deployment
-
-### Frontend (Vercel)
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push
-
-### Backend (Railway)
-1. Connect your repository to Railway
-2. Configure environment variables
-3. Deploy with automatic builds
-
-
-## 🙏 Acknowledgments
-
-- Formula 1 data providers and open-source community
-- Vercel and Railway for hosting infrastructure
+## 🙏 Credits & Acknowledgments
+- **Jolpica F1 API:** Providing detailed Ergast championship histories and standings.
+- **OpenF1 API:** Providing high-frequency real-time timing, car telemetry, and track weather.
