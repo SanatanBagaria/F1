@@ -1,20 +1,98 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRaceSchedule } from "../hooks/useRaceSchedule";
 
 const RaceSchedule = () => {
-  const [selectedSeason, setSelectedSeason] = useState(
-    new Date().getFullYear()
-  );
-  const { races, loading, error, refetch, dataSource } =
-    useRaceSchedule(selectedSeason);
+  const [selectedSeason, setSelectedSeason] = useState(2026);
+  const { races, loading, error, refetch, dataSource } = useRaceSchedule(selectedSeason);
+  
+  // Expandable results states
+  const [expandedRace, setExpandedRace] = useState(null);
+  const [raceResults, setRaceResults] = useState({});
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [standings, setStandings] = useState([]);
 
-  // Generate season options (last 5 years + current + next)
-  const currentYear = new Date().getFullYear();
-  const seasons = Array.from({ length: 7 }, (_, i) => currentYear - 3 + i);
+  // Generate season options (no future years, up to 2026)
+  const seasons = Array.from({ length: 9 }, (_, i) => 2026 - i);
+
+  // Fetch driver standings for predictions fallback
+  useEffect(() => {
+    const fetchStandings = async () => {
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${API_BASE_URL}/api/standings/drivers/${selectedSeason}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStandings(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch standings for schedule predictions:", err);
+      }
+    };
+    fetchStandings();
+  }, [selectedSeason]);
+
+  const fetchResults = async (round) => {
+    const key = `${selectedSeason}-${round}`;
+    if (raceResults[key]) return; // Already cached locally
+
+    setLoadingResults(true);
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE_URL}/api/results/${selectedSeason}/${round}`);
+      if (response.ok) {
+        const rawData = await response.json();
+        const mappedResults = rawData.map(res => ({
+          position: res.position,
+          driver: `${res.Driver.givenName} ${res.Driver.familyName}`,
+          team: res.Constructor.name,
+          time: res.Time?.time || res.status || 'N/A',
+          points: res.points
+        }));
+        setRaceResults(prev => ({
+          ...prev,
+          [key]: mappedResults
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch race results:", err);
+    } finally {
+      setLoadingResults(false);
+    }
+  };
+
+  const handleRaceClick = (race) => {
+    if (expandedRace === race.id) {
+      setExpandedRace(null);
+    } else {
+      setExpandedRace(race.id);
+      if (new Date(race.date) < new Date()) {
+        fetchResults(race.round);
+      }
+    }
+  };
+
+  const handleAddToCalendar = (race, e) => {
+    e.stopPropagation(); // Avoid expanding card
+    const title = `F1 Grand Prix: ${race.name}`;
+    const start = new Date(`${race.date}T${race.time || "14:00:00Z"}`);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // 2 hrs duration
+
+    const formatDateForGoogle = (date) => {
+      return date.toISOString().replace(/-|:|\.\d\d\d/g, "");
+    };
+
+    const details = `Round ${race.round} of F1 ${race.season} Season. Circuit: ${race.circuit}. URL: ${race.url}`;
+    const location = `${race.circuit}, ${race.locality}, ${race.country}`;
+    
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDateForGoogle(start)}/${formatDateForGoogle(end)}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
+    
+    window.open(googleCalendarUrl, "_blank");
+  };
 
   const formatDateTime = (date, time) => {
     try {
-      const raceDateTime = new Date(`${date}T${time}`);
+      const timeClean = time && time !== "TBD" ? (time.endsWith('Z') ? time : time + 'Z') : "14:00:00Z";
+      const raceDateTime = new Date(`${date}T${timeClean}`);
       return {
         date: raceDateTime.toLocaleDateString("en-US", {
           weekday: "long",
@@ -22,7 +100,7 @@ const RaceSchedule = () => {
           month: "long",
           day: "numeric",
         }),
-        time: raceDateTime.toLocaleTimeString("en-US", {
+        time: time === "TBD" ? "TBD" : raceDateTime.toLocaleTimeString("en-US", {
           hour: "2-digit",
           minute: "2-digit",
           timeZoneName: "short",
@@ -40,36 +118,18 @@ const RaceSchedule = () => {
       };
     }
   };
-  const getRaceStatus = (date, time) => {
+
+  const getRaceStatus = (date) => {
     const now = new Date();
-
-    // Handle time format - default to 14:00:00 if not provided
-    const raceTime = time && time !== "TBD" ? time : "14:00:00";
-    const raceDateTime = new Date(`${date}T${raceTime}`);
-
-    // Add 2 hours for race duration
-    const raceEnd = new Date(raceDateTime.getTime() + 2 * 60 * 60 * 1000);
-
-    if (now > raceEnd) {
-      return "completed";
-    } else if (raceDateTime <= now && now <= raceEnd) {
-      return "live";
-    } else {
-      return "upcoming";
-    }
+    const raceDate = new Date(date);
+    if (now > raceDate) return "completed";
+    return "upcoming";
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "completed":
-        return "text-green-600 dark:text-green-400";
-      case "live":
-        return "text-red-600 dark:text-red-400 animate-pulse";
-      case "upcoming":
-        return "text-blue-600 dark:text-blue-400";
-      default:
-        return "text-gray-500 dark:text-gray-400";
-    }
+    return status === "completed"
+      ? "text-green-600 dark:text-green-400"
+      : "text-blue-600 dark:text-blue-400";
   };
 
   if (loading) {
@@ -77,38 +137,7 @@ const RaceSchedule = () => {
       <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center space-y-6">
           <div className="w-1 h-16 bg-red-600 mx-auto animate-pulse"></div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-extralight text-gray-900 dark:text-white">
-              Loading
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 font-light">
-              Fetching schedule
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="w-1 h-16 bg-red-600 mx-auto"></div>
-          <div className="space-y-4">
-            <h2 className="text-xl font-extralight text-gray-900 dark:text-white">
-              Error
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 font-light">
-              {error}
-            </p>
-            <button
-              onClick={refetch}
-              className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-light"
-            >
-              Try Again
-            </button>
-          </div>
+          <h2 className="text-xl font-extralight text-gray-900 dark:text-white">Loading Schedule...</h2>
         </div>
       </div>
     );
@@ -116,116 +145,95 @@ const RaceSchedule = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      {/* Minimal Header */}
+      {/* Header */}
       <section className="py-24 border-b border-gray-100 dark:border-gray-800">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center space-y-6">
-            <div className="inline-flex items-center space-x-4">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4">
               <div className="w-1 h-12 bg-red-600"></div>
-              <h1 className="text-4xl md:text-6xl font-extralight text-gray-900 dark:text-white tracking-tight">
-                Schedule
+              <h1 className="text-4xl md:text-5xl font-extralight text-gray-900 dark:text-white tracking-tight">
+                Race Calendar
               </h1>
-              <div className="w-1 h-12 bg-red-600"></div>
             </div>
-            <p className="text-lg text-gray-500 dark:text-gray-400 font-light">
-              {selectedSeason} Season
+            <p className="text-gray-500 dark:text-gray-400 font-light">
+              Track times, locations, and interactive classifications.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Season Selector */}
-      <section className="py-12 border-b border-gray-100 dark:border-gray-800">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-3 md:grid-cols-7 gap-px bg-gray-100 dark:bg-gray-800">
-            {seasons.map((season) => (
-              <button
-                key={season}
-                onClick={() => setSelectedSeason(season)}
-                className={`group bg-white dark:bg-gray-950 p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-300 ${
-                  selectedSeason === season ? "bg-gray-50 dark:bg-gray-900" : ""
-                }`}
-              >
-                <div className="space-y-2">
-                  <div
-                    className={`text-lg font-light transition-colors ${
-                      selectedSeason === season
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400"
-                    }`}
-                  >
-                    {season}
-                  </div>
-                  <div
-                    className={`w-6 h-px mx-auto transition-colors ${
-                      selectedSeason === season
-                        ? "bg-red-600 dark:bg-red-400"
-                        : "bg-gray-200 dark:bg-gray-800 group-hover:bg-red-600 dark:group-hover:bg-red-400"
-                    }`}
-                  ></div>
-                </div>
-              </button>
-            ))}
+          
+          {/* Season Selector Dropdown */}
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-500 dark:text-gray-400 font-light">Season:</span>
+            <select
+              value={selectedSeason}
+              onChange={(e) => {
+                setSelectedSeason(parseInt(e.target.value));
+                setExpandedRace(null);
+              }}
+              className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded px-4 py-2 focus:border-red-600 focus:outline-none"
+            >
+              {seasons.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
           </div>
         </div>
       </section>
 
       {/* Race List */}
-      <section className="py-24">
+      <section className="py-16">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="space-y-px bg-gray-100 dark:bg-gray-800">
+          <div className="space-y-4">
             {races.map((race) => {
-              const { date: formattedDate, time: formattedTime } =
-                formatDateTime(race.date, race.time);
-              const status = getRaceStatus(race.date, race.time);
+              const { date: formattedDate, time: formattedTime } = formatDateTime(race.date, race.time);
+              const status = getRaceStatus(race.date);
+              const isExpanded = expandedRace === race.id;
+              const resultsKey = `${selectedSeason}-${race.round}`;
+              const results = raceResults[resultsKey];
 
               return (
                 <div
                   key={race.id}
-                  className="group bg-white dark:bg-gray-950 p-12 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-300"
+                  onClick={() => handleRaceClick(race)}
+                  className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-red-600/30 transition-all duration-300 rounded-lg p-8 cursor-pointer shadow-sm hover:shadow-md"
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-1 h-8 bg-red-600"></div>
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-3">
-                            <h3 className="text-xl font-light text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                              Round {race.round}: {race.name}
-                            </h3>
-                            <span
-                              className={`text-sm font-light uppercase tracking-wider ${getStatusColor(
-                                status
-                              )}`}
-                            >
-                              {status}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400 font-light">
-                            <span>{race.circuit}</span>
-                            <div className="w-px h-3 bg-gray-300 dark:bg-gray-700"></div>
-                            <span>
-                              {race.locality}, {race.country}
-                            </span>
-                          </div>
-                        </div>
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <span className={`text-xs uppercase tracking-widest font-semibold ${getStatusColor(status)}`}>
+                          {status}
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 font-light">Round {race.round}</span>
                       </div>
-
-                      <div className="pl-5 space-y-1 text-sm text-gray-500 dark:text-gray-400 font-light">
-                        <div>{formattedDate}</div>
-                        <div>{formattedTime}</div>
-                      </div>
+                      
+                      <h3 className="text-2xl font-light text-gray-900 dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                        {race.name}
+                      </h3>
+                      
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-light">
+                        {race.circuit} • <span className="font-normal">{race.locality}, {race.country}</span>
+                      </p>
                     </div>
 
-                    <div className="mt-6 lg:mt-0 lg:ml-6">
-                      <div className="flex items-center space-x-6">
-                        <button className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-light">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-6 justify-between lg:justify-end">
+                      <div className="text-left lg:text-right text-sm text-gray-600 dark:text-gray-400 font-light">
+                        <div>{formattedDate}</div>
+                        <div className="text-xs text-gray-500">{formattedTime}</div>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={(e) => handleAddToCalendar(race, e)}
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-all"
+                        >
                           Add to Calendar
                         </button>
-                        <div className="w-px h-4 bg-gray-200 dark:bg-gray-800"></div>
                         <button
-                          onClick={() => window.open(race.url, "_blank")}
-                          className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-light"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(race.url, "_blank");
+                          }}
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-all"
                         >
                           Circuit Info
                         </button>
@@ -233,7 +241,72 @@ const RaceSchedule = () => {
                     </div>
                   </div>
 
-                  <div className="w-6 h-px bg-gray-200 dark:bg-gray-800 group-hover:bg-red-600 dark:group-hover:bg-red-400 transition-colors mt-6"></div>
+                  {/* Expanded Results Section */}
+                  {isExpanded && (
+                    <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
+                      <h4 className="text-lg font-light text-gray-900 dark:text-white mb-6">
+                        {status === "completed" ? "Race Classification" : "Projected Starting Grid (based on Standings)"}
+                      </h4>
+
+                      {status === "completed" ? (
+                        loadingResults ? (
+                          <div className="flex justify-center py-6">
+                            <div className="w-8 h-8 border-t-2 border-red-600 rounded-full animate-spin"></div>
+                          </div>
+                        ) : results ? (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="border-b border-gray-100 dark:border-gray-800 text-xs text-gray-400 uppercase tracking-widest font-normal">
+                                  <th className="py-3">Pos</th>
+                                  <th className="py-3">Driver</th>
+                                  <th className="py-3">Constructor</th>
+                                  <th className="py-3 text-right">Time/Status</th>
+                                  <th className="py-3 text-right">Points</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {results.map((res, i) => (
+                                  <tr key={i} className="border-b border-gray-50 dark:border-gray-800/40 text-sm font-light text-gray-900 dark:text-gray-300">
+                                    <td className="py-3.5 font-medium text-gray-500">{res.position}</td>
+                                    <td className="py-3.5 font-normal">{res.driver}</td>
+                                    <td className="py-3.5 text-gray-500">{res.team}</td>
+                                    <td className="py-3.5 text-right text-gray-500">{res.time}</td>
+                                    <td className="py-3.5 text-right font-medium text-red-600">{res.points}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Results unavailable.</p>
+                        )
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-100 dark:border-gray-800 text-xs text-gray-400 uppercase tracking-widest">
+                                <th className="py-3">Grid</th>
+                                <th className="py-3">Driver</th>
+                                <th className="py-3">Constructor</th>
+                                <th className="py-3 text-right">Points</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {standings.slice(0, 15).map((std, i) => (
+                                <tr key={i} className="border-b border-gray-50 dark:border-gray-800/40 text-sm font-light text-gray-900 dark:text-gray-300">
+                                  <td className="py-3.5 font-medium text-gray-500">{i + 1}</td>
+                                  <td className="py-3.5 font-normal">{std.Driver.givenName} {std.Driver.familyName}</td>
+                                  <td className="py-3.5 text-gray-500">{std.Constructors[0]?.name || "N/A"}</td>
+                                  <td className="py-3.5 text-right text-gray-500">{std.points}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -241,36 +314,10 @@ const RaceSchedule = () => {
         </div>
       </section>
 
-      {/* Minimal Footer CTA */}
-      <section className="py-24 border-t border-gray-100 dark:border-gray-800">
-        <div className="max-w-2xl mx-auto px-4 text-center space-y-8">
-          <h2 className="text-2xl font-extralight text-gray-900 dark:text-white">
-            Never Miss a Race
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 font-light leading-relaxed">
-            Stay updated with the complete Formula 1 calendar and get
-            notifications for all sessions.
-          </p>
-          <div className="flex justify-center space-x-8">
-            <button className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-light">
-              Add Calendar
-            </button>
-            <button className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-light">
-              Set Reminders
-            </button>
-          </div>
-          <div className="w-12 h-px bg-red-600 mx-auto"></div>
-        </div>
-      </section>
-
-      {/* Data Source */}
+      {/* Footer */}
       {dataSource && (
-        <section className="py-12 border-t border-gray-100 dark:border-gray-800">
-          <div className="max-w-6xl mx-auto px-4 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-light">
-              Data from {dataSource}
-            </p>
-          </div>
+        <section className="py-12 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-500">
+          Calendar feeds dynamically synced via {dataSource}
         </section>
       )}
     </div>

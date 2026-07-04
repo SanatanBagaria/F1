@@ -1,255 +1,341 @@
-"use client"
-
-import { useState } from "react"
-import PollWidget from "../components/PollWidget"
+import React, { useState } from "react";
 
 const Polls = () => {
-  const [activeTab, setActiveTab] = useState("polls")
+  const [activeTab, setActiveTab] = useState("polls");
+  const [userVotes, setUserVotes] = useState({});
+  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [quizScore, setQuizScore] = useState(null);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
 
-  const polls = [
+  const initialPolls = [
     {
       id: 1,
-      question: "Who will win the 2024 Drivers' Championship?",
+      question: "Who will win the 2026 Drivers' Championship?",
       options: [
         { text: "Max Verstappen", votes: 1247 },
         { text: "Lando Norris", votes: 892 },
         { text: "Charles Leclerc", votes: 634 },
-        { text: "Other", votes: 127 },
+        { text: "Lewis Hamilton", votes: 712 },
       ],
     },
     {
       id: 2,
-      question: "Which team will win the Constructors' Championship?",
+      question: "Which team will win the 2026 Constructors' Championship?",
       options: [
         { text: "McLaren", votes: 1156 },
+        { text: "Ferrari", votes: 1210 },
         { text: "Red Bull Racing", votes: 987 },
-        { text: "Ferrari", votes: 743 },
-        { text: "Mercedes", votes: 214 },
+        { text: "Mercedes", votes: 412 },
       ],
     },
     {
       id: 3,
-      question: "Best rookie driver of 2024?",
+      question: "Who will surprise the most in the upcoming season?",
       options: [
+        { text: "Kimi Antonelli", votes: 654 },
+        { text: "Liam Lawson", votes: 323 },
         { text: "Oliver Bearman", votes: 456 },
-        { text: "Franco Colapinto", votes: 623 },
-        { text: "Liam Lawson", votes: 389 },
-        { text: "Other", votes: 132 },
+        { text: "Jack Doohan", votes: 112 },
       ],
     },
-  ]
+  ];
+
+  const [polls, setPolls] = useState(initialPolls);
 
   const quizzes = [
     {
       id: 1,
-      title: "F1 2024 Season Quiz",
-      description: "Test your knowledge of the 2024 Formula 1 season",
-      questions: 15,
-      difficulty: "Medium",
-      category: "Current Season",
-      participants: 2847,
-      averageScore: 78,
+      title: "F1 2025 Season Quiz",
+      description: "Test your knowledge of the historic 2025 Formula 1 season!",
+      questions: [
+        {
+          q: "Who won the 2025 F1 Drivers' Championship?",
+          options: ["Max Verstappen", "Lando Norris", "Charles Leclerc", "Lewis Hamilton"],
+          answer: 1 // Lando Norris
+        },
+        {
+          q: "Which team won the 2025 Constructors' Championship?",
+          options: ["McLaren", "Ferrari", "Red Bull Racing", "Mercedes"],
+          answer: 0 // McLaren
+        },
+        {
+          q: "Where was Lewis Hamilton driving in the 2025 season?",
+          options: ["Mercedes", "Ferrari", "Red Bull", "Aston Martin"],
+          answer: 0 // Mercedes (he moves to Ferrari in 2026)
+        },
+        {
+          q: "How many wins did Lando Norris score in 2025?",
+          options: ["5 wins", "7 wins", "9 wins", "11 wins"],
+          answer: 1 // 7 wins
+        },
+        {
+          q: "Which street race hosted the final round of Hamilton's Mercedes career?",
+          options: ["Abu Dhabi", "Las Vegas", "Jeddah", "Singapore"],
+          answer: 0 // Abu Dhabi
+        }
+      ]
     },
     {
       id: 2,
-      title: "F1 Legends Quiz",
-      description: "How well do you know F1 history and legendary drivers?",
-      questions: 20,
-      difficulty: "Hard",
-      category: "History",
-      participants: 1923,
-      averageScore: 65,
-    },
-    {
-      id: 3,
-      title: "Technical F1 Quiz",
-      description: "Test your understanding of F1 car technology and regulations",
-      questions: 12,
-      difficulty: "Expert",
-      category: "Technical",
-      participants: 1456,
-      averageScore: 52,
-    },
-    {
-      id: 4,
-      title: "Circuit Knowledge Quiz",
-      description: "How well do you know the F1 calendar circuits?",
-      questions: 18,
-      difficulty: "Easy",
-      category: "Circuits",
-      participants: 3421,
-      averageScore: 82,
-    },
-  ]
-
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty.toLowerCase()) {
-      case "easy":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-      case "hard":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-      case "expert":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+      title: "F1 Legends & History",
+      description: "Test your understanding of F1 classic champions and historic circuits.",
+      questions: [
+        {
+          q: "Who holds the record for the most F1 Driver Championships in history?",
+          options: ["Michael Schumacher & Lewis Hamilton", "Ayrton Senna", "Sebastian Vettel", "Alain Prost"],
+          answer: 0
+        },
+        {
+          q: "Which track is known as the 'Temple of Speed'?",
+          options: ["Silverstone", "Spa-Francorchamps", "Monza", "Monaco"],
+          answer: 2
+        },
+        {
+          q: "What is the unique figure-eight layout track on the calendar?",
+          options: ["Marina Bay", "Suzuka", "Circuit of the Americas", "Interlagos"],
+          answer: 1
+        }
+      ]
     }
-  }
+  ];
+
+  const handleVote = (pollId, optionIdx) => {
+    if (userVotes[pollId] !== undefined) return; // User already voted
+    
+    setUserVotes(prev => ({
+      ...prev,
+      [pollId]: optionIdx
+    }));
+
+    setPolls(prevPolls => 
+      prevPolls.map(p => {
+        if (p.id !== pollId) return p;
+        return {
+          ...p,
+          options: p.options.map((opt, idx) => {
+            if (idx !== optionIdx) return opt;
+            return { ...opt, votes: opt.votes + 1 };
+          })
+        };
+      })
+    );
+  };
+
+  const startQuiz = (quiz) => {
+    setActiveQuiz(quiz);
+    setCurrentQuestionIdx(0);
+    setQuizScore(0);
+  };
+
+  const handleQuizAnswer = (selectedIdx) => {
+    const isCorrect = selectedIdx === activeQuiz.questions[currentQuestionIdx].answer;
+    if (isCorrect) {
+      setQuizScore(prev => prev + 1);
+    }
+
+    if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
+      setCurrentQuestionIdx(prev => prev + 1);
+    } else {
+      // Completed
+      setCurrentQuestionIdx(-1);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">Fan Polls & Quizzes</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Engage with the F1 community through polls, predictions, and knowledge tests
+    <div className="min-h-screen bg-white dark:bg-gray-950">
+      {/* Header */}
+      <section className="py-24 border-b border-gray-100 dark:border-gray-800">
+        <div className="max-w-6xl mx-auto px-4 text-center space-y-6">
+          <div className="inline-flex items-center space-x-4">
+            <div className="w-1 h-12 bg-red-600"></div>
+            <h1 className="text-4xl md:text-6xl font-extralight text-gray-900 dark:text-white tracking-tight">
+              Fan Zone
+            </h1>
+            <div className="w-1 h-12 bg-red-600"></div>
+          </div>
+          <p className="text-lg text-gray-500 dark:text-gray-400 font-light max-w-xl mx-auto">
+            Interact with polls, cast your votes, and test your Formula 1 knowledge.
           </p>
         </div>
+      </section>
 
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+      {/* Tabs */}
+      <section className="py-12 border-b border-gray-100 dark:border-gray-800">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-2 gap-px bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
             <button
               onClick={() => setActiveTab("polls")}
-              className={`flex-1 py-3 px-6 rounded-md font-semibold transition-colors ${
-                activeTab === "polls"
-                  ? "bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-300 font-light text-lg ${
+                activeTab === "polls" 
+                  ? "bg-gray-50 dark:bg-gray-900 text-red-600 dark:text-red-400" 
+                  : "bg-white dark:bg-gray-950 text-gray-900 dark:text-white"
               }`}
             >
-              📊 Polls & Predictions
+              Fan Polls
             </button>
             <button
               onClick={() => setActiveTab("quizzes")}
-              className={`flex-1 py-3 px-6 rounded-md font-semibold transition-colors ${
-                activeTab === "quizzes"
-                  ? "bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-300 font-light text-lg ${
+                activeTab === "quizzes" 
+                  ? "bg-gray-50 dark:bg-gray-900 text-red-600 dark:text-red-400" 
+                  : "bg-white dark:bg-gray-950 text-gray-900 dark:text-white"
               }`}
             >
-              🧠 Knowledge Quizzes
+              F1 Trivia Quiz
             </button>
           </div>
         </div>
+      </section>
 
-        {/* Polls Tab */}
-        {activeTab === "polls" && (
-          <div className="space-y-8">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {polls.map((poll) => (
-                <PollWidget key={poll.id} poll={poll} />
-              ))}
+      {/* Content */}
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          
+          {/* Polls tab */}
+          {activeTab === "polls" && (
+            <div className="space-y-8">
+              {polls.map((poll) => {
+                const totalVotes = poll.options.reduce((sum, o) => sum + o.votes, 0);
+                const hasVoted = userVotes[poll.id] !== undefined;
+
+                return (
+                  <div key={poll.id} className="border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-xl p-8 space-y-6">
+                    <h3 className="text-xl font-light text-gray-900 dark:text-white">{poll.question}</h3>
+                    
+                    <div className="space-y-3">
+                      {poll.options.map((option, idx) => {
+                        const percent = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+                        const isUserChoice = userVotes[poll.id] === idx;
+
+                        return (
+                          <div 
+                            key={idx}
+                            onClick={() => handleVote(poll.id, idx)}
+                            className={`relative overflow-hidden border rounded-lg p-4 cursor-pointer transition-all ${
+                              hasVoted 
+                                ? (isUserChoice ? "border-red-600 bg-red-500/5" : "border-gray-100 dark:border-gray-850 bg-gray-50/50 dark:bg-gray-900/50")
+                                : "border-gray-200 dark:border-gray-800 hover:border-red-600/50 bg-white dark:bg-gray-950"
+                            }`}
+                          >
+                            {/* Animated progress bar */}
+                            {hasVoted && (
+                              <div 
+                                className="absolute left-0 top-0 bottom-0 bg-red-600/10 transition-all duration-1000"
+                                style={{ width: `${percent}%` }}
+                              ></div>
+                            )}
+
+                            <div className="relative flex justify-between items-center text-sm font-light text-gray-900 dark:text-gray-300">
+                              <span className="font-normal">{option.text}</span>
+                              {hasVoted && (
+                                <span className="font-semibold text-red-600">
+                                  {percent}% ({option.votes} votes)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          )}
 
-            {/* Create Poll CTA */}
-            <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-8 text-white text-center">
-              <h2 className="text-2xl font-bold mb-4">Have a Question for the Community?</h2>
-              <p className="text-red-100 mb-6">
-                Create your own poll and see what fellow F1 fans think about the latest topics.
-              </p>
-              <button className="bg-yellow-400 text-black px-8 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition-colors">
-                Create New Poll
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Quizzes Tab */}
-        {activeTab === "quizzes" && (
-          <div className="space-y-8">
+          {/* Quizzes tab */}
+          {activeTab === "quizzes" && (
             <div className="grid md:grid-cols-2 gap-6">
               {quizzes.map((quiz) => (
-                <div
-                  key={quiz.id}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{quiz.title}</h3>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">{quiz.description}</p>
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(quiz.difficulty)}`}
-                    >
-                      {quiz.difficulty}
+                <div key={quiz.id} className="border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-xl p-8 space-y-6 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-light text-gray-900 dark:text-white">{quiz.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-light leading-relaxed">{quiz.description}</p>
+                    <span className="inline-block bg-red-50 dark:bg-red-950/20 text-red-600 text-xs px-2.5 py-1 rounded">
+                      {quiz.questions.length} Questions
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Questions:</span>
-                      <div className="font-semibold text-gray-900 dark:text-white">{quiz.questions}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Category:</span>
-                      <div className="font-semibold text-gray-900 dark:text-white">{quiz.category}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Participants:</span>
-                      <div className="font-semibold text-gray-900 dark:text-white">
-                        {quiz.participants.toLocaleString()}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Avg Score:</span>
-                      <div className="font-semibold text-gray-900 dark:text-white">{quiz.averageScore}%</div>
-                    </div>
-                  </div>
-
-                  <button className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                  <button
+                    onClick={() => startQuiz(quiz)}
+                    className="w-full text-center px-4 py-2 border border-red-600 text-red-600 dark:border-red-400 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-400 dark:hover:text-black transition-all rounded text-sm"
+                  >
                     Start Quiz
                   </button>
                 </div>
               ))}
             </div>
+          )}
 
-            {/* Quiz Stats */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                Community Quiz Statistics
-              </h2>
-              <div className="grid md:grid-cols-4 gap-6 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
-                    {quizzes.reduce((total, quiz) => total + quiz.participants, 0).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Participants</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">{quizzes.length}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Available Quizzes</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
-                    {Math.round(quizzes.reduce((total, quiz) => total + quiz.averageScore, 0) / quizzes.length)}%
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Average Score</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
-                    {quizzes.reduce((total, quiz) => total + quiz.questions, 0)}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Questions</div>
-                </div>
-              </div>
+        </div>
+      </section>
+
+      {/* Quiz Modal Overlay */}
+      {activeQuiz && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 max-w-md w-full rounded-xl p-8 space-y-6 shadow-2xl">
+            <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-gray-800">
+              <h4 className="text-lg font-light text-gray-900 dark:text-white">{activeQuiz.title}</h4>
+              <button 
+                onClick={() => setActiveQuiz(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
             </div>
 
-            {/* Leaderboard Preview */}
-            <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl p-8 text-black">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">🏆 Weekly Leaderboard</h2>
-                <p className="mb-6">Compete with other F1 fans and climb the weekly quiz leaderboard!</p>
-                <button className="bg-black text-yellow-400 px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
-                  View Full Leaderboard
-                </button>
+            {currentQuestionIdx >= 0 ? (
+              <div className="space-y-6">
+                {/* Question index */}
+                <div className="text-xs text-gray-400 uppercase tracking-widest">
+                  Question {currentQuestionIdx + 1} of {activeQuiz.questions.length}
+                </div>
+                
+                <h5 className="text-lg font-normal text-gray-900 dark:text-white">
+                  {activeQuiz.questions[currentQuestionIdx].q}
+                </h5>
+
+                <div className="space-y-3">
+                  {activeQuiz.questions[currentQuestionIdx].options.map((option, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleQuizAnswer(idx)}
+                      className="w-full text-left p-4 border border-gray-200 dark:border-gray-800 hover:border-red-600 rounded-lg text-sm font-light text-gray-800 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 transition-all"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              // Results screen
+              <div className="text-center space-y-6 py-6">
+                <div className="text-6xl">🏁</div>
+                <h5 className="text-2xl font-light text-gray-900 dark:text-white">Quiz Completed!</h5>
+                <p className="text-lg text-gray-500 font-light">
+                  Your Score: <span className="font-semibold text-red-600">{quizScore} / {activeQuiz.questions.length}</span>
+                </p>
+                <div className="flex justify-center space-x-4 pt-4">
+                  <button
+                    onClick={() => startQuiz(activeQuiz)}
+                    className="px-6 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  >
+                    Play Again
+                  </button>
+                  <button
+                    onClick={() => setActiveQuiz(null)}
+                    className="px-6 py-2 border border-gray-200 dark:border-gray-800 text-sm text-gray-600 dark:text-gray-400 rounded hover:bg-gray-50 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default Polls
+export default Polls;

@@ -3,8 +3,7 @@ import { ThemeProvider } from "./contexts/ThemeContext"
 import Navbar from "./components/Navbar"
 import Footer from "./components/Footer"
 import LandingPage from "./pages/LandingPage"
-import RaceHistories from "./pages/RaceHistories"
-import SeasonWinners from "./pages/SeasonWinners"
+import History from "./pages/History"
 import CurrentStandings from "./pages/CurrentStandings"
 import RaceSchedule from "./pages/RaceSchedule"
 import LiveUpdates from "./pages/LiveUpdates"
@@ -25,8 +24,7 @@ function App() {
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/race-histories" element={<RaceHistories />} />
-              <Route path="/season-winners" element={<SeasonWinners />} />
+              <Route path="/history" element={<History />} />
               <Route path="/standings" element={<CurrentStandings />} />
               <Route path="/schedule" element={<RaceSchedule />} />
               <Route path="/live" element={<LiveUpdates />} />

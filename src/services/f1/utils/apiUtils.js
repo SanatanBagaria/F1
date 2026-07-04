@@ -317,7 +317,7 @@ export const createApiEndpoint = (baseUrl, path, queryParams = {}) => {
 
 // Utility for API request logging
 export const logApiRequest = (method, url, options = {}) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`🌐 API ${method.toUpperCase()}: ${url}`, {
       timestamp: new Date().toISOString(),
       options: Object.keys(options).length > 0 ? options : undefined
@@ -327,7 +327,7 @@ export const logApiRequest = (method, url, options = {}) => {
 
 // Utility for API response logging
 export const logApiResponse = (url, response, duration) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`✅ API Response: ${url}`, {
       status: response.status,
       duration: `${duration}ms`,

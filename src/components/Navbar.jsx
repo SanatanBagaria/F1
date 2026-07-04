@@ -11,8 +11,7 @@ const Navbar = () => {
 
   const navItems = [
     { path: "/", label: "Home" },
-    { path: "/race-histories", label: "Race Histories" },
-    { path: "/season-winners", label: "Champions" },
+    { path: "/history", label: "History" },
     { path: "/standings", label: "Standings" },
     { path: "/schedule", label: "Schedule" },
     { path: "/live", label: "Live" },
@@ -43,7 +42,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
-            {navItems.slice(0, 8).map((item) => (
+            {navItems.slice(0, 6).map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -63,7 +62,7 @@ const Navbar = () => {
                 More
               </button>
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                {navItems.slice(8).map((item) => (
+                {navItems.slice(6).map((item) => (
                   <Link
                     key={item.path}
                     to={item.path}

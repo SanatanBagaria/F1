@@ -20,7 +20,7 @@ const LandingPage = () => {
     {
       title: "Race Archive",
       description: "Historical race results",
-      link: "/race-histories",
+      link: "/history",
     },
   ]
 
