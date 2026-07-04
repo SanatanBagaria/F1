@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const CurrentStandings = () => {
   const [activeTab, setActiveTab] = useState("drivers");
@@ -12,242 +12,6 @@ const CurrentStandings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dataSource, setDataSource] = useState("");
-
-  // Add useEffect to fetch data
-  useState(() => {
-    const fetchStandings = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch from your backend API
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        
-        const [driversResponse, constructorsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/standings/drivers/current`),
-          fetch(`${API_BASE_URL}/api/standings/teams/current`)
-        ]);
-
-        if (!driversResponse.ok || !constructorsResponse.ok) {
-          throw new Error('Failed to fetch standings data');
-        }
-
-        const driversData = await driversResponse.json();
-        const constructorsData = await constructorsResponse.json();
-
-        // Transform drivers data
-        const transformedDrivers = driversData.map((driver) => ({
-          position: parseInt(driver.position),
-          driver: `${driver.Driver.givenName} ${driver.Driver.familyName}`,
-          team: driver.Constructors[0].name,
-          points: parseInt(driver.points),
-          wins: parseInt(driver.wins),
-          podiums: driver.podiums || 0,
-          poles: driver.poles || 0,
-          fastestLaps: driver.fastestLaps || 0,
-          dnfs: driver.dnfs || 0,
-          pointsPerRace: driver.pointsPerRace || 0,
-          teamColor: getTeamColor(driver.Constructors[0].constructorId),
-        }));
-
-        // Transform constructors data
-        const transformedConstructors = constructorsData.map((constructor) => ({
-          position: parseInt(constructor.position),
-          team: constructor.Constructor.name,
-          points: parseInt(constructor.points),
-          color: getTeamColor(constructor.Constructor.constructorId),
-          wins: parseInt(constructor.wins),
-          podiums: constructor.podiums || 0,
-          poles: constructor.poles || 0,
-          fastestLaps: constructor.fastestLaps || 0,
-          driver1: "Driver 1",
-          driver2: "Driver 2",
-          driver1Points: 0,
-          driver2Points: 0,
-        }));
-
-        setDriversStandings(transformedDrivers);
-        setConstructorsStandings(transformedConstructors);
-        setDataSource('Jolpica F1 API');
-
-      } catch (err) {
-        setError(err.message);
-        console.error("Failed to fetch standings:", err);
-        
-        // Fallback to your existing hardcoded data
-        setDriversStandings([
-          {
-            position: 1,
-            driver: "Max Verstappen",
-            team: "Red Bull Racing",
-            points: 393,
-            wins: 7,
-            podiums: 12,
-            poles: 5,
-            fastestLaps: 4,
-            dnfs: 1,
-            pointsPerRace: 19.7,
-            teamColor: "#3671C6",
-          },
-          {
-            position: 2,
-            driver: "Lando Norris",
-            team: "McLaren",
-            points: 331,
-            wins: 3,
-            podiums: 8,
-            poles: 2,
-            fastestLaps: 2,
-            dnfs: 0,
-            pointsPerRace: 16.6,
-            teamColor: "#F58020",
-          },
-          {
-            position: 3,
-            driver: "Charles Leclerc",
-            team: "Ferrari",
-            points: 307,
-            wins: 2,
-            podiums: 7,
-            poles: 3,
-            fastestLaps: 3,
-            dnfs: 2,
-            pointsPerRace: 15.4,
-            teamColor: "#F91536",
-          },
-          {
-            position: 4,
-            driver: "Oscar Piastri",
-            team: "McLaren",
-            points: 262,
-            wins: 2,
-            podiums: 5,
-            poles: 0,
-            fastestLaps: 1,
-            dnfs: 1,
-            pointsPerRace: 13.1,
-            teamColor: "#F58020",
-          },
-          {
-            position: 5,
-            driver: "Carlos Sainz",
-            team: "Ferrari",
-            points: 244,
-            wins: 1,
-            podiums: 4,
-            poles: 1,
-            fastestLaps: 2,
-            dnfs: 1,
-            pointsPerRace: 12.2,
-            teamColor: "#F91536",
-          },
-          {
-            position: 6,
-            driver: "George Russell",
-            team: "Mercedes",
-            points: 192,
-            wins: 1,
-            podiums: 3,
-            poles: 1,
-            fastestLaps: 1,
-            dnfs: 0,
-            pointsPerRace: 9.6,
-            teamColor: "#6CD3BF",
-          },
-          {
-            position: 7,
-            driver: "Lewis Hamilton",
-            team: "Mercedes",
-            points: 190,
-            wins: 2,
-            podiums: 4,
-            poles: 0,
-            fastestLaps: 1,
-            dnfs: 1,
-            pointsPerRace: 9.5,
-            teamColor: "#6CD3BF",
-          },
-          {
-            position: 8,
-            driver: "Sergio Perez",
-            team: "Red Bull Racing",
-            points: 151,
-            wins: 0,
-            podiums: 2,
-            poles: 0,
-            fastestLaps: 0,
-            dnfs: 3,
-            pointsPerRace: 7.6,
-            teamColor: "#3671C6",
-          },
-        ]);
-
-        setConstructorsStandings([
-          {
-            position: 1,
-            team: "McLaren",
-            points: 593,
-            color: "#F58020",
-            wins: 5,
-            podiums: 13,
-            poles: 2,
-            fastestLaps: 3,
-            driver1: "Lando Norris",
-            driver2: "Oscar Piastri",
-            driver1Points: 331,
-            driver2Points: 262,
-          },
-          {
-            position: 2,
-            team: "Red Bull Racing",
-            points: 544,
-            color: "#3671C6",
-            wins: 7,
-            podiums: 14,
-            poles: 5,
-            fastestLaps: 4,
-            driver1: "Max Verstappen",
-            driver2: "Sergio Perez",
-            driver1Points: 393,
-            driver2Points: 151,
-          },
-          {
-            position: 3,
-            team: "Ferrari",
-            points: 551,
-            color: "#F91536",
-            wins: 3,
-            podiums: 11,
-            poles: 4,
-            fastestLaps: 5,
-            driver1: "Charles Leclerc",
-            driver2: "Carlos Sainz",
-            driver1Points: 307,
-            driver2Points: 244,
-          },
-          {
-            position: 4,
-            team: "Mercedes",
-            points: 382,
-            color: "#6CD3BF",
-            wins: 3,
-            podiums: 7,
-            poles: 1,
-            fastestLaps: 2,
-            driver1: "George Russell",
-            driver2: "Lewis Hamilton",
-            driver1Points: 192,
-            driver2Points: 190,
-          },
-        ]);
-        setDataSource('Fallback Data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStandings();
-  }, []);
 
   const getTeamColor = (constructorId) => {
     const teamColors = {
@@ -267,16 +31,18 @@ const CurrentStandings = () => {
     return teamColors[constructorId] || '#666666';
   };
 
-  const refetchData = async () => {
+  const fetchStandingsData = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // Fetch from your backend API
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       
-      const [driversResponse, constructorsResponse] = await Promise.all([
+      const [driversResponse, constructorsResponse, podiumsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/standings/drivers/current?t=${Date.now()}`),
-        fetch(`${API_BASE_URL}/api/standings/teams/current?t=${Date.now()}`)
+        fetch(`${API_BASE_URL}/api/standings/teams/current?t=${Date.now()}`),
+        fetch(`${API_BASE_URL}/api/driver-podiums/current?t=${Date.now()}`).catch(() => null)
       ]);
 
       if (!driversResponse.ok || !constructorsResponse.ok) {
@@ -285,28 +51,71 @@ const CurrentStandings = () => {
 
       const driversData = await driversResponse.json();
       const constructorsData = await constructorsResponse.json();
+      let podiumsData = {};
+      if (podiumsResponse && podiumsResponse.ok) {
+        podiumsData = await podiumsResponse.json();
+      }
 
+      // Transform drivers data
       const transformedDrivers = driversData.map((driver) => ({
         position: parseInt(driver.position),
         driver: `${driver.Driver.givenName} ${driver.Driver.familyName}`,
         team: driver.Constructors[0].name,
         points: parseInt(driver.points),
         wins: parseInt(driver.wins),
-        podiums: driver.podiums || 0,
+        podiums: podiumsData[driver.Driver.driverId] || parseInt(driver.wins) || 0,
+        poles: driver.poles || 0,
+        fastestLaps: driver.fastestLaps || 0,
+        dnfs: driver.dnfs || 0,
+        pointsPerRace: driver.pointsPerRace || 0,
         teamColor: getTeamColor(driver.Constructors[0].constructorId),
       }));
 
-      const transformedConstructors = constructorsData.map((constructor) => ({
-        position: parseInt(constructor.position),
-        team: constructor.Constructor.name,
-        points: parseInt(constructor.points),
-        color: getTeamColor(constructor.Constructor.constructorId),
-        wins: parseInt(constructor.wins),
-        driver1: "Driver 1",
-        driver2: "Driver 2",
-        driver1Points: 0,
-        driver2Points: 0,
-      }));
+      // Map constructor drivers and individual points dynamically
+      const constructorsDriversMap = {};
+      driversData.forEach(driver => {
+        const constructorId = driver.Constructors[0].constructorId;
+        const driverName = `${driver.Driver.givenName} ${driver.Driver.familyName}`;
+        const driverPoints = parseInt(driver.points);
+        
+        if (!constructorsDriversMap[constructorId]) {
+          constructorsDriversMap[constructorId] = [];
+        }
+        constructorsDriversMap[constructorId].push({ name: driverName, points: driverPoints });
+      });
+
+      // Transform constructors data
+      const transformedConstructors = constructorsData.map((constructor) => {
+        const constId = constructor.Constructor.constructorId;
+        const constructorDrivers = constructorsDriversMap[constId] || [];
+        
+        const d1 = constructorDrivers[0]?.name || "N/A";
+        const d1Points = constructorDrivers[0]?.points || 0;
+        const d2 = constructorDrivers[1]?.name || "N/A";
+        const d2Points = constructorDrivers[1]?.points || 0;
+
+        let totalPodiums = 0;
+        transformedDrivers.forEach(dr => {
+          if (dr.team.toLowerCase().includes(constructor.Constructor.name.toLowerCase())) {
+            totalPodiums += dr.podiums;
+          }
+        });
+
+        return {
+          position: parseInt(constructor.position),
+          team: constructor.Constructor.name,
+          points: parseInt(constructor.points),
+          color: getTeamColor(constId),
+          wins: parseInt(constructor.wins),
+          podiums: totalPodiums || parseInt(constructor.wins) || 0,
+          poles: constructor.poles || 0,
+          fastestLaps: constructor.fastestLaps || 0,
+          driver1: d1,
+          driver2: d2,
+          driver1Points: d1Points,
+          driver2Points: d2Points,
+        };
+      });
 
       setDriversStandings(transformedDrivers);
       setConstructorsStandings(transformedConstructors);
@@ -314,9 +123,90 @@ const CurrentStandings = () => {
 
     } catch (err) {
       setError(err.message);
+      console.error("Failed to fetch standings, using fallback:", err);
+      setDriversStandings([
+        {
+          position: 1,
+          driver: "Max Verstappen",
+          team: "Red Bull Racing",
+          points: 393,
+          wins: 7,
+          podiums: 12,
+          poles: 5,
+          fastestLaps: 4,
+          dnfs: 1,
+          pointsPerRace: 19.7,
+          teamColor: "#3671C6",
+        },
+        {
+          position: 2,
+          driver: "Lando Norris",
+          team: "McLaren",
+          points: 331,
+          wins: 3,
+          podiums: 8,
+          poles: 2,
+          fastestLaps: 2,
+          dnfs: 0,
+          pointsPerRace: 16.6,
+          teamColor: "#F58020",
+        },
+        {
+          position: 3,
+          driver: "Charles Leclerc",
+          team: "Ferrari",
+          points: 307,
+          wins: 2,
+          podiums: 7,
+          poles: 3,
+          fastestLaps: 3,
+          dnfs: 2,
+          pointsPerRace: 15.4,
+          teamColor: "#F91536",
+        }
+      ]);
+      setConstructorsStandings([
+        {
+          position: 1,
+          team: "McLaren",
+          points: 593,
+          color: "#F58020",
+          wins: 5,
+          podiums: 13,
+          poles: 2,
+          fastestLaps: 3,
+          driver1: "Lando Norris",
+          driver2: "Oscar Piastri",
+          driver1Points: 331,
+          driver2Points: 262,
+        },
+        {
+          position: 2,
+          team: "Red Bull Racing",
+          points: 544,
+          color: "#3671C6",
+          wins: 7,
+          podiums: 14,
+          poles: 5,
+          fastestLaps: 4,
+          driver1: "Max Verstappen",
+          driver2: "Sergio Perez",
+          driver1Points: 393,
+          driver2Points: 151,
+        }
+      ]);
+      setDataSource('Local Offline Archive');
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchStandingsData();
+  }, []);
+
+  const refetchData = () => {
+    fetchStandingsData();
   };
 
   const getPositionColor = (position) => {

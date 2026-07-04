@@ -75,26 +75,20 @@ const useChampionshipWinners = (startYear = 2020, endYear = 2024) => {
         years.push(year);
       }
 
-      console.log(`Fetching championship data for years: ${years.join(', ')}`);
+      console.log(`Fetching championship data in parallel for years: ${years.join(', ')}`);
 
-      const championsData = [];
-      
-      for (const year of years) {
-        try {
-          console.log(`Fetching championship data for ${year}`);
-          const championData = await fetchChampionshipData(year);
-          
-          if (championData) {
-            championsData.push(championData);
+      const results = await Promise.all(
+        years.map(async (year) => {
+          try {
+            return await fetchChampionshipData(year);
+          } catch (e) {
+            console.warn(`Failed to fetch champion data for ${year}:`, e.message);
+            return null;
           }
-          
-          // Small delay between requests
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-        } catch (error) {
-          console.warn(`Failed to fetch champion data for ${year}:`, error.message);
-        }
-      }
+        })
+      );
+
+      const championsData = results.filter(Boolean);
 
       // Sort by year (most recent first)
       championsData.sort((a, b) => b.year - a.year);

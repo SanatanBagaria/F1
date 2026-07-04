@@ -44,7 +44,8 @@ const useRaceSchedule = (season) => {
         country: race.Circuit?.Location?.country || '',
         date: race.date,
         time: race.time || 'TBD',
-        status: new Date(race.date) < new Date() ? 'completed' : 'upcoming'
+        status: new Date(race.date) < new Date() ? 'completed' : 'upcoming',
+        url: race.url || race.Circuit?.url || ''
       }));
       
       console.log(`Found ${transformedRaces.length} races for ${season}`);
