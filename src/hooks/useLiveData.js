@@ -10,7 +10,8 @@ export const useLiveData = () => {
     intervals: [],
     carData: [],
     sessions: [],
-    currentSession: null
+    currentSession: null,
+    nextSession: null
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -79,6 +80,7 @@ export const useLiveData = () => {
         intervals: data.intervals || [],
         carData: data.carData || [],
         currentSession: data.currentSession || prevData.currentSession,
+        nextSession: data.nextSession || prevData.nextSession,
         sessions: data.currentSession ? [data.currentSession] : prevData.sessions
       }))
       setIsLive(data.isLive || false)
@@ -90,6 +92,7 @@ export const useLiveData = () => {
       setLiveData(prevData => ({
         ...prevData,
         currentSession: data.currentSession,
+        nextSession: data.nextSession,
         sessions: [data.currentSession]
       }))
       setIsLive(data.isLive || false)

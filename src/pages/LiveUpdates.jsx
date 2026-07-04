@@ -99,8 +99,18 @@ const LiveUpdates = () => {
             </div>
             <div className="space-y-2">
               <p className="text-lg text-gray-500 dark:text-gray-400 font-light">
-                {liveData.currentSession
+                {isLive && liveData.currentSession
                   ? liveData.currentSession.session_name
+                  : liveData.nextSession
+                  ? `Next Session: ${liveData.nextSession.session_name} (${new Date(liveData.nextSession.date_start).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })})`
+                  : liveData.currentSession
+                  ? `Latest Session: ${liveData.currentSession.session_name}`
                   : "Latest session data"}
               </p>
               {/* Only show connection status for timing and commentary */}
@@ -249,7 +259,7 @@ const LiveUpdates = () => {
               intervals={liveData.intervals}
               carData={liveData.carData}
               isLive={isLive}
-              currentSession={liveData.currentSession}
+              currentSession={liveData.nextSession || liveData.currentSession}
             />
           )}
           {/* Commentary Tab - Uses Socket.IO live data */}

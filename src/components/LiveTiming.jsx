@@ -39,42 +39,61 @@ const LiveTiming = ({
         (a.position || a.driver_number) - (b.position || b.driver_number)
     );
 
-  // Show session status when no live session or no data
-  if (!isLive && (!drivers || drivers.length === 0)) {
+  // Show session status card when no live session is active
+  if (!isLive) {
     return (
-      <div className="bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-800">
-        <div className="bg-gray-50 dark:bg-gray-800 p-4 border-b border-gray-100 dark:border-gray-800">
-          <h3 className="text-lg font-light text-gray-900 dark:text-white flex items-center">
-            <span className="mr-2">⏱️</span>
-            Live Timing
-            <div className="ml-2 w-2 h-2 bg-gray-400 rounded-full"></div>
-          </h3>
-        </div>
-        <div className="p-12 text-center">
-          <div className="space-y-6">
-            <div className="w-1 h-16 bg-gray-300 dark:bg-gray-700 mx-auto"></div>
-            <div className="space-y-2">
-              <h4 className="text-xl font-extralight text-gray-900 dark:text-white">
-                No Live Session
-              </h4>
-              <p className="text-gray-500 dark:text-gray-400 font-light">
-                Live timing data will appear during active F1 sessions
-              </p>
-              {currentSession && (
-                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
-                    Latest session:{" "}
-                    {currentSession.session_name || "Unknown Session"}
-                  </p>
-                  {currentSession.date_start && (
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      {new Date(currentSession.date_start).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+      <div className="bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl p-8 max-w-2xl mx-auto shadow-sm">
+        <div className="text-center space-y-8 py-12">
+          {/* Pulsing idle dot */}
+          <div className="inline-flex items-center space-x-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-900 rounded-full text-xs text-gray-500 font-light">
+            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+            <span>No Active Session</span>
           </div>
+
+          <div className="space-y-3">
+            <h3 className="text-3xl font-extralight text-gray-900 dark:text-white leading-tight">
+              Live Timing Offline
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-light max-w-md mx-auto">
+              Live telemetry, driver speeds, and sector intervals will activate automatically as soon as the cars hit the track.
+            </p>
+          </div>
+
+          {currentSession && (
+            <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-850 max-w-md mx-auto space-y-4 text-center">
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase tracking-widest text-red-600 dark:text-red-400 font-semibold">UPCOMING EVENT</span>
+                <h4 className="text-lg font-light text-gray-950 dark:text-white">
+                  {currentSession.session_name || "Next Session"}
+                </h4>
+              </div>
+              
+              <div className="w-full h-px bg-gray-200 dark:bg-gray-850"></div>
+
+              <div className="grid grid-cols-2 gap-4 text-xs font-light text-gray-500 dark:text-gray-400">
+                <div className="text-left">
+                  <span className="block text-[10px] uppercase text-gray-400">Location</span>
+                  <span className="font-normal text-gray-850 dark:text-gray-200">
+                    {currentSession.location || "TBD"}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="block text-[10px] uppercase text-gray-400">Date & Time</span>
+                  <span className="font-normal text-gray-850 dark:text-gray-200">
+                    {currentSession.date_start 
+                      ? new Date(currentSession.date_start).toLocaleString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      : "TBD"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
