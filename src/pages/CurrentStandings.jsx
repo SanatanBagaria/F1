@@ -263,7 +263,7 @@ const CurrentStandings = () => {
             </div>
             <div className="space-y-2">
               <p className="text-lg text-gray-500 dark:text-gray-400 font-light">
-                2025 Championship
+                {new Date().getFullYear()} Championship
               </p>
               <div className="flex justify-center items-center space-x-4">
                 <p className="text-sm text-gray-400 dark:text-gray-500">
