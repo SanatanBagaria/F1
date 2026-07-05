@@ -174,7 +174,13 @@ const openf1Service = {
 
   fetchWeather: async (sessionKey = 'latest') => {
     try {
-      const keyToUse = config.TEST_SESSION_KEY || sessionKey;
+      let keyToUse = config.TEST_SESSION_KEY || sessionKey;
+      
+      if (keyToUse === 'latest' || isNaN(parseInt(keyToUse))) {
+        const sessionData = await openf1Service.fetchSessionData();
+        keyToUse = sessionData?.session_key || 9565;
+      }
+
       const response = await axios.get(`https://api.openf1.org/v1/weather?session_key=${keyToUse}&limit=10`);
       return response.data || [];
     } catch (error) {
